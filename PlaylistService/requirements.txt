@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy>=2.0
+asyncpg
+alembic
+pydantic
+pydantic-settings
+python-dotenv
+python-jose[cryptography]
+bcrypt
+minio
+aioboto3
+python-multipart
+email-validator
+ulid-py

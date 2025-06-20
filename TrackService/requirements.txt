@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+SQLAlchemy>=2.0
+asyncpg
+alembic
+python-jose[cryptography]
+aioboto3
+pydub
+ulid-py
+python-multipart

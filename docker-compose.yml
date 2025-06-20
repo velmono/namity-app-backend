@@ -1,0 +1,165 @@
+services:
+  auth_service:
+    container_name: auth_service
+    build:
+      context: ./AuthService
+      dockerfile: Docker/Dockerfile
+    
+    restart: unless-stopped
+    depends_on:
+      - auth_database
+    environment:
+      DATABASE_HOST: auth_database
+      DATABASE_USER: ${AUTH_DATABASE_USER}
+      DATABASE_PASSWORD: ${AUTH_DATABASE_PASSWORD}
+      DATABASE_NAME: ${AUTH_DATABASE_NAME}
+    ports:
+      - "8001:8001"
+
+  profile_service:
+    container_name: profile_service
+    build:
+      context: ./ProfileService
+      dockerfile: Docker/Dockerfile
+      
+    restart: unless-stopped
+    depends_on:
+      - profile_database
+      - minio
+    environment:
+      DATABASE_HOST: profile_database
+      DATABASE_USER: ${PROFILE_DATABASE_USER}
+      DATABASE_PASSWORD: ${PROFILE_DATABASE_PASSWORD}
+      DATABASE_NAME: ${PROFILE_DATABASE_NAME}
+    ports:
+      - "8002:8002"
+
+  track_service:
+    build:
+      context: ./TrackService
+      dockerfile: Docker/Dockerfile
+    container_name: track_service
+    restart: unless-stopped
+    depends_on:
+      - track_database
+    environment:
+      DATABASE_HOST: track_database
+      DATABASE_USER: ${TRACK_DATABASE_USER}
+      DATABASE_PASSWORD: ${TRACK_DATABASE_PASSWORD}
+      DATABASE_NAME: ${TRACK_DATABASE_NAME}
+    ports:
+      - "8003:8003"
+
+  playlist_service:
+    container_name: playlist_service
+    build:
+      context: ./PlaylistService
+      dockerfile: Docker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - playlist_database
+    environment:
+      DATABASE_HOST: playlist_database
+      DATABASE_USER: ${PLAYLIST_DATABASE_USER}
+      DATABASE_PASSWORD: ${PLAYLIST_DATABASE_PASSWORD}
+      DATABASE_NAME: ${PLAYLIST_DATABASE_NAME}
+    ports:
+      - "8004:8004"
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth_service
+      - profile_service
+      - track_service
+      - playlist_service
+
+  auth_database:
+    container_name: auth_database
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${AUTH_DATABASE_USER}
+      POSTGRES_PASSWORD: ${AUTH_DATABASE_PASSWORD}
+      POSTGRES_DB: ${AUTH_DATABASE_NAME}
+    ports:
+      - 5432:5432
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+
+  profile_database:
+    container_name: profile_database
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PROFILE_DATABASE_USER}
+      POSTGRES_PASSWORD: ${PROFILE_DATABASE_PASSWORD}
+      POSTGRES_DB: ${PROFILE_DATABASE_NAME}
+    ports:
+      - "5433:5432"
+    volumes:
+      - profile_db_data:/var/lib/postgresql/data
+
+  track_database:
+    container_name: track_database
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${TRACK_DATABASE_USER}
+      POSTGRES_PASSWORD: ${TRACK_DATABASE_PASSWORD}
+      POSTGRES_DB:       ${TRACK_DATABASE_NAME}
+    ports:
+      - "5434:5432"
+    volumes:
+      - track_db_data:/var/lib/postgresql/data
+
+  playlist_database:
+    container_name: playlist_database
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PLAYLIST_DATABASE_USER}
+      POSTGRES_PASSWORD: ${PLAYLIST_DATABASE_PASSWORD}
+      POSTGRES_DB: ${PLAYLIST_DATABASE_NAME}
+    ports:
+      - "5435:5432"
+    volumes:
+      - playlist_db_data:/var/lib/postgresql/data
+
+  minio:
+    container_name: minio
+    image: minio/minio:latest
+    restart: unless-stopped
+
+    environment:
+      MINIO_ROOT_USER:     ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+
+    ports:
+      - "9000:9000"
+      - "9201:9001"
+
+    command: server /minio/storage --console-address :9001
+
+    volumes:
+      - minio_data:/minio/storage
+    
+
+
+
+volumes:
+  # Volume for AuthService database storage
+  auth_db_data:
+  # Volume for ProfileService database storage
+  profile_db_data:
+  # Volume for TrackService database storage
+  track_db_data:
+  # Volume for MinIO storage
+  minio_data:
+  # Volume for PlaylistService database storage
+  playlist_db_data:
